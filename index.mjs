@@ -1,5 +1,5 @@
-const express = require('express');
-const fs = require('fs/promises');
+import express from 'express';
+import * as fs from 'fs/promises';
 import fetch from 'node-fetch';
 
 const app = express();
