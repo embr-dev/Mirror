@@ -12,7 +12,7 @@ app.all('*', async (req, res, next) => {
             fetch(`http://${req.query.hostname}/auth`)
                 .then(response => response.text())
                 .then(data => {
-                    if (data === auth) {
+                    if (data == auth) {
                         next();
                     } else {
                         res.json({ error: true, errorMsg: `The domain ${req.query.hostname} does not contain the the auth token needed to access this server.` })
