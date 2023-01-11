@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "name": "gamehub-api-mirror-server",
+  "description": "A simple proxy server for the RetroNetwork API",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GameHub88/Mirror.git"
+  },
+  "keywords": [
+    "proxy",
+    "gamehub"
+  ],
+  "author": "GameHub88",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GameHub88/Mirror/issues"
+  },
+  "homepage": "https://github.com/GameHub88/Mirror#readme"
+}
