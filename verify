@@ -1,0 +1,5 @@
+6b128f81-f827-4e82-98ed-7e0d297019fa
+
+//If you change the token above you must also change the token located at the path /assets/files/verify on the static site
+//If you do not change the verification token on your instance
+//the client will try and connect to the public servers
