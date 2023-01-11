@@ -64,7 +64,7 @@ app.post('*', (req, res) => {
     }
 })
 
-app.get('/package.json', (req, res) => {
+/*app.get('/package.json', (req, res) => {
     const file = await fs.readFile('./package.json');
 
     res.json(JSON.parse(file));
@@ -74,7 +74,7 @@ app.get('/package-lock.json', (req, res) => {
     const file = await fs.readFile('./package-lock.json');
 
     res.json(JSON.parse(file));
-})
+})*/
 
 app.listen(2000, () => {
     console.log(`Your mirror server is running on port 2000 using ${process.version}`);
