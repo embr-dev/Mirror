@@ -28,31 +28,39 @@ app.all('*', async (req, res, next) => {
 })
 
 app.get('*', (req, res) => {
-    fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`)
-        .then(response => response.text())
-        .then(response => {
-            try {
-                JSON.parse(response);
-                res.json(JSON.parse(response));
-            } catch (e) {
-                res.send(response);
-            }
-        })
-        .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
+    try {
+        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`)
+            .then(response => response.text())
+            .then(response => {
+                try {
+                    JSON.parse(response);
+                    res.json(JSON.parse(response));
+                } catch (e) {
+                    res.send(response);
+                }
+            })
+            .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
+    } catch (e) {
+        res.json({ error: true, errorMsg: 'An internal server error occurred' });
+    }
 })
 
 app.post('*', (req, res) => {
-    fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'POST', body: JSON.stringify(req.body)})
-        .then(response => response.text())
-        .then(response => {
-            try {
-                JSON.parse(response);
-                res.json(JSON.parse(response));
-            } catch (e) {
-                res.send(response);
-            }
-        })
-        .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
+    try {
+        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'POST', body: JSON.stringify(req.body) })
+            .then(response => response.text())
+            .then(response => {
+                try {
+                    JSON.parse(response);
+                    res.json(JSON.parse(response));
+                } catch (e) {
+                    res.send(response);
+                }
+            })
+            .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
+    } catch (e) {
+        res.json({ error: true, errorMsg: 'An internal server error occurred' });
+    }
 })
 
 app.listen(2000, () => {
