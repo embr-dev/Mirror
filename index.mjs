@@ -46,19 +46,23 @@ app.get('*', (req, res) => {
     }
 })
 
-app.post('*', (req, res) => {
+app.post('*', async (req, res) => {
     try {
-        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'post', body: JSON.stringify(req.body), headers: { 'Content-Type': 'application/json' } })
-            .then(response => response.text())
-            .then(response => {
-                try {
-                    JSON.parse(response);
-                    res.json(JSON.parse(response));
-                } catch (e) {
-                    res.send(response);
-                }
-            })
-            .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
+        const response = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, {
+            method: 'post',
+            body: JSON.stringify(req.body),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        let data;
+
+        try {
+            data = response.json();
+            res.json(data);
+        } catch (e) {
+            data = response.text();
+            res.send(data);
+        }
     } catch (e) {
         res.json({ error: true, errorMsg: 'An internal server error occurred' });
     }
