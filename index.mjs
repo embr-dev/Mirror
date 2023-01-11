@@ -48,7 +48,7 @@ app.get('*', (req, res) => {
 
 app.post('*', (req, res) => {
     try {
-        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'post', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
+        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'post', body: JSON.stringify(req.body), headers: { 'Content-Type': 'application/json' } })
             .then(response => response.text())
             .then(response => {
                 try {
