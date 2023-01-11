@@ -64,5 +64,5 @@ app.post('*', (req, res) => {
 })
 
 app.listen(2000, () => {
-    console.log('Your mirror server is running on port 2000');
+    console.log(`Your mirror server is running on port 2000 using ${process.version}`);
 });
