@@ -1,11 +1,12 @@
 const express = require('express');
 const fs = require('fs/promises');
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
 
 app.all('*', async (req, res, next) => {
-    const auth = await fs.readFile('./auth')
+    const auth = await fs.readFile('./auth');
 
     if (auth != 'public') {
         if (req.query.hostname) {
@@ -61,6 +62,18 @@ app.post('*', (req, res) => {
     } catch (e) {
         res.json({ error: true, errorMsg: 'An internal server error occurred' });
     }
+})
+
+app.get('/package.json', (req, res) => {
+    const file = await fs.readFile('./package.json');
+
+    res.json(JSON.parse(file));
+})
+
+app.get('/package-lock.json', (req, res) => {
+    const file = await fs.readFile('./package-lock.json');
+
+    res.json(JSON.parse(file));
 })
 
 app.listen(2000, () => {
