@@ -2,13 +2,13 @@
   "dependencies": {
     "express": "^4.18.2"
   },
-  "name": "gamehub-api-mirror-server",
+  "name": "GameHub API Mirror",
   "description": "A simple proxy server for the RetroNetwork API",
   "version": "1.0.0",
   "main": "index.js",
   "devDependencies": {},
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.mjs"
   },
   "repository": {
     "type": "git",
