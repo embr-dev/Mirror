@@ -7,7 +7,7 @@ app.use(express.json());
 app.all('*', async (req, res, next) => {
     const auth = await fs.readFile('./auth')
 
-    //if (auth !== 'public') {
+    if (auth != 'public') {
         if (req.query.hostname) {
             fetch(`http://${req.query.hostname}/auth`)
                 .then(response => response.text())
@@ -22,9 +22,9 @@ app.all('*', async (req, res, next) => {
         } else {
             res.json({ error: true, errorMsg: `Missing required parameters.` })
         }
-    /*} else {
+    } else {
         next();
-    }*/
+    }
 })
 
 app.get('*', (req, res) => {
