@@ -16,7 +16,7 @@ app.all('*', async (req, res, next) => {
                     if (data == auth) {
                         next();
                     } else {
-                        res.json({ error: true, errorMsg: `The domain ${req.query.hostname} does not contain the the auth token needed to access this server.` })
+                        res.json({ error: true, errorMsg: `The domain ${req.query.hostname} does not contain the the auth token needed to access this server.` });
                     }
                 })
                 .catch(e => res.json({ error: true, errorMsg: `The domain ${req.query.hostname} is either not a GameHub instance or it is missing the verification token. If you are using an older fork of GameHub you may want to update.` }));
@@ -48,7 +48,7 @@ app.get('*', (req, res) => {
 
 app.post('*', (req, res) => {
     try {
-        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'POST', body: JSON.stringify(req.body) })
+        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, { method: 'post', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
             .then(response => response.text())
             .then(response => {
                 try {
