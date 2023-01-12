@@ -5,10 +5,7 @@ import cors from 'cors';
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-    origin: '*',
-    methods: ['GET','POST']
-}));
+app.use(cors());
 
 app.all('*', async (req, res, next) => {
     const auth = await fs.readFile('./auth');
