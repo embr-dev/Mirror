@@ -5,9 +5,9 @@ import cors from 'cors';
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
 
-app.all('*', async (req, res, next) => {
+app.all('*', cors({ origin: '*' }), async (req, res, next) => {
     const auth = await fs.readFile('./auth');
 
     if (auth != 'public') {
@@ -30,7 +30,7 @@ app.all('*', async (req, res, next) => {
     }
 })
 
-app.get('*', (req, res) => {
+app.get('*', cors({ origin: '*' }), (req, res) => {
     try {
         fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`)
             .then(response => response.text())
@@ -48,7 +48,7 @@ app.get('*', (req, res) => {
     }
 })
 
-app.post('*', async (req, res) => {
+app.post('*', cors({ origin: '*' }), async (req, res) => {
     try {
         const response = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, {
             method: 'post',
