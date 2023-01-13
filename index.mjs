@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import fetch from 'node-fetch';
 import cors from 'cors';
 
-import oackage from `./package.json` assert { type: `json` };
+import package from './package.json';
 
 const app = express();
 app.use(express.json());
