@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import fetch from 'node-fetch';
 import cors from 'cors';
 
-import package from './package.json';
+import packagefile from './package.json' assert { type: 'json' }
 
 const app = express();
 app.use(express.json());
@@ -33,7 +33,7 @@ app.all('*', async (req, res, next) => {
 })
 
 app.all('/', async (req, res) => {
-    res.json({ server: 'ready', version: package.version, website: 'https://gh.retronetwork.ml', description: package.description, repository: package.repository.replace('git+', '') });
+    res.json({ server: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.replace('git+', '') });
 });
 
 app.get('*', (req, res) => {
