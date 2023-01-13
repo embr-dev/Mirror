@@ -30,6 +30,13 @@ app.all('*', async (req, res, next) => {
     }
 })
 
+app.all('/', (req, res) => {
+    const file = await fs.readFile('./package.json');
+    const package = JSON.parse(file);
+
+    res.json({ server: 'ready', version: package.version, website: 'https://gh.retronetwork.ml', description: package.description, repository: package.repository.replace('git+', '') });
+});
+
 app.get('*', (req, res) => {
     try {
         fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`)
