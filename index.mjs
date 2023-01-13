@@ -2,10 +2,11 @@ import express from 'express';
 import * as fs from 'fs/promises';
 import fetch from 'node-fetch';
 import cors from 'cors';
-
-import packagefile from './package.json' assert { type: 'json' };
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const app = express();
+const packagefile = require('./package.json');
 app.use(express.json());
 app.use(cors({ origin: '*' }));
 
@@ -33,7 +34,7 @@ app.all('*', async (req, res, next) => {
 })
 
 app.all('/', async (req, res) => {
-    res.json({ server: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.replace('git+', '') });
+    res.json({ server: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.url.replace('git+', '').replace('.git', '') });
 });
 
 app.get('*', (req, res) => {
