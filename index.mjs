@@ -30,7 +30,7 @@ app.all('*', async (req, res, next) => {
     }
 })
 
-app.all('/', (req, res) => {
+app.all('/', async (req, res) => {
     const file = await fs.readFile('./package.json');
     const package = JSON.parse(file);
 
