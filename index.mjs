@@ -34,7 +34,7 @@ app.all('*', async (req, res, next) => {
 })
 
 app.all('/', async (req, res) => {
-    res.json({ server: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.url.replace('git+', '').replace('.git', '') });
+    res.json({ status: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.url.replace('git+', '').replace('.git', '') });
 });
 
 app.get('*', (req, res) => {
