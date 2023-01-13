@@ -9,10 +9,15 @@ A simple proxy server for the GameHub API
 [![Deploy to Heroku](https://binbashbanana.github.io/deploy-buttons/buttons/remade/heroku.svg)](https://heroku.com/deploy/?template=https://github.com/GameHub88/Mirror)
 [![Deploy to Render](https://binbashbanana.github.io/deploy-buttons/buttons/remade/render.svg)](https://render.com/deploy?repo=https://github.com/GameHub88/Mirror)
 [![Run on Replit](https://binbashbanana.github.io/deploy-buttons/buttons/remade/replit.svg)](https://github.com/GameHub88/Mirror)
+(I would recomend using cyclic because it has fast deploy speeds and it supports custom domains.)
 
 ## Docs
 
-I would recomend using cyclic because it has fast deploy times and it supports custom domains.
+| Path            | Data                                                                                                                                                                              | Parameters         | Method |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
+| /               | { status: 'ready'/'inoperable', version: version, website: website, description: 'A simple proxy server for the GameHub API', repository: 'https://github.com/GameHub88/Mirror' } | none               | GET    |
+| /games          | [ {thumbnail: game-thumbnail, name: game-name, id: game-id}, ... ]                                                                                                                | none               | GET    |
+| /games/:game-id | { name: game-name, url: game-url, thumbnail: game-thumbnail }                                                                                                                     | ?hostname=hostname | GET    |
 
 ## Localy
 If you want to run and test the server localy on your device, navigate to your console and run:
