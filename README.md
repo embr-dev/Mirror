@@ -11,13 +11,13 @@ A simple proxy server for the GameHub API
 [![Run on Replit](https://binbashbanana.github.io/deploy-buttons/buttons/remade/replit.svg)](https://github.com/GameHub88/Mirror)
 (I would recomend using cyclic because it has fast deploy speeds and it supports custom domains.)
 
-## Docs
+## API Docs
 
-| Path            | Data                                                                                                                                                                              | Parameters         | Method |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
-| /               | { status: 'ready'/'inoperable', version: version, website: website, description: 'A simple proxy server for the GameHub API', repository: 'https://github.com/GameHub88/Mirror' } | none               | GET    |
-| /games          | [ {thumbnail: game-thumbnail, name: game-name, id: game-id}, ... ]                                                                                                                | none               | GET    |
-| /games/:game-id | { name: game-name, url: game-url, thumbnail: game-thumbnail }                                                                                                                     | ?hostname=hostname | GET    |
+| Path            | Data                                                                                                                                                                                                | Parameters         | Method |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
+| /               | {<br>status: 'ready'/'inoperable',<br>version: version,<br>website: website,<br>description: 'A simple proxy server for the GameHub API',<br>repository: 'https://github.com/GameHub88/Mirror'<br>} | none               | GET    |
+| /games          | [<br>{thumbnail: game-thumbnail, name: game-name, id: game-id},<br>...<br>]                                                                                                                         | none               | GET    |
+| /games/:game-id | {<br>name: game-name,<br>url: game-url,<br>thumbnail: game-thumbnail<br>}                                                                                                                           | ?hostname=hostname | GET    |
 
 ## Localy
 If you want to run and test the server localy on your device, navigate to your console and run:
