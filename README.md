@@ -12,14 +12,6 @@ A simple proxy server for the GameHub API
 <br>
 (I would recomend using cyclic because it has fast deploy speeds and it supports custom domains.)
 
-## API Docs
-
-| Path            | Data                                                                                                                                                                                                | Parameters         | Method |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
-| /               | {<br>status: 'ready'/'inoperable',<br>version: version,<br>website: website,<br>description: 'A simple proxy server for the GameHub API',<br>repository: 'https://github.com/GameHub88/Mirror'<br>} | none               | GET    |
-| /games          | [<br>{thumbnail: game-thumbnail, name: game-name, id: game-id},<br>...<br>]                                                                                                                         | none               | GET    |
-| /games/:game-id | {<br>name: game-name,<br>url: game-url,<br>thumbnail: game-thumbnail<br>}                                                                                                                           | ?hostname=hostname | GET    |
-
 ## Localy
 If you want to run and test the server localy on your device, navigate to your console and run:
 
@@ -28,12 +20,24 @@ git clone https://github.com/GameHub88/Mirror.git
 ```
 Make sure you have [nodejs](https://nodejs.org) installed for these next steps:
 ```bash
+cd Mirror
+```
+```bash
 npm install
+```
+```bash
 npm start
 ```
 
 then navigate on your web browser to [`localhost:2000`](http://localhost:2000) or [`127.0.0.1:2000`](http://127.0.0.1:2000) to test the server.
 
+## API Docs
+
+| Path            | Data                                                                                                                                                                                                | Parameters         | Method |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
+| /               | {<br>status: 'ready'/'inoperable',<br>version: version,<br>website: website,<br>description: 'A simple proxy server for the GameHub API',<br>repository: 'https://github.com/GameHub88/Mirror'<br>} | none               | GET    |
+| /games          | [<br>{thumbnail: game-thumbnail, name: game-name, id: game-id},<br>...<br>]                                                                                                                         | none               | GET    |
+| /games/:game-id | {<br>name: game-name,<br>url: game-url,<br>thumbnail: game-thumbnail<br>}                                                                                                                           | ?hostname=hostname | GET    |
 
 ## Contributors
 
