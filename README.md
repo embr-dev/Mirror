@@ -35,8 +35,8 @@ then navigate on your web browser to [`localhost:2000`](http://localhost:2000) o
 
 | Path            | Data                                                                                                                                                                                                | Parameters         | Method |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
-| /               | {<br>status: 'ready'/'inoperable',<br>version: version,<br>website: website,<br>description: 'A simple proxy server for the GameHub API',<br>repository: 'https://github.com/GameHub88/Mirror'<br>} | none               | GET    |
-| /games          | ```[{thumbnail: game-thumbnail, name: game-name, id: game-id},...]```|                                                                                                                       | none               | GET    |
+| /               | ```{status: 'ready'/'inoperable',version: version,website: website,description: 'A simple proxy server for the GameHub API',repository: 'https://github.com/GameHub88/Mirror'}``` | none               | GET    |
+| /games          | ```[{thumbnail: game-thumbnail, name: game-name, id: game-id}]```|                                                                                                                       | none               | GET    |
 | /games/:game-id | {<br>name: game-name,<br>url: game-url,<br>thumbnail: game-thumbnail<br>}                                                                                                                           | ?hostname=hostname | GET    |
 
 ## Contributors
