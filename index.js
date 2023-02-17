@@ -37,43 +37,20 @@ app.all('/', async (req, res) => {
     res.json({ status: 'ready', version: packagefile.version, website: 'https://gh.retronetwork.ml', description: packagefile.description, repository: packagefile.repository.url.replace('git+', '').replace('.git', '') });
 });
 
-app.get('*', (req, res) => {
+app.all('*', async (req, res) => {
     try {
-        fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`)
-            .then(response => response.text())
-            .then(response => {
-                try {
-                    JSON.parse(response);
-                    res.json(JSON.parse(response));
-                } catch (e) {
-                    res.send(response);
-                }
-            })
-            .catch(e => res.json({ error: true, errorMsg: 'An internal server error occurred' }));
-    } catch (e) {
-        res.json({ error: true, errorMsg: 'An internal server error occurred' });
-    }
-})
+        const file = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`);
+        const data = new Buffer.from(await file.arrayBuffer());
 
-app.post('*', async (req, res) => {
-    try {
-        const response = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, {
-            method: 'post',
-            body: JSON.stringify(req.body),
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        let data;
-
-        try {
-            data = response.json();
-            res.json(data);
-        } catch (e) {
-            data = response.text();
-            res.send(data);
+        if (file.headers.get('content-type').split(';')[0] == 'text/plain' && req.path.endsWith('.html') || req.path.endsWith('.htm')) {
+            res.writeHead(file.status, { 'Content-Type': 'text/html' })
+        } else {
+            res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
         }
+        res.end(data);
     } catch (e) {
-        res.json({ error: true, errorMsg: 'An internal server error occurred' });
+        res.sendStatus(404);
+        throw new Error(e);
     }
 })
 
