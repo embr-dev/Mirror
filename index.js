@@ -39,18 +39,41 @@ app.all('/', async (req, res) => {
 
 app.all('*', async (req, res) => {
     try {
-        const file = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`);
-        const data = new Buffer.from(await file.arrayBuffer());
+        if (req.method == 'GET' || req.method == 'HEAD') {
+            const file = await fetch(`http://10.82.7.62:3000/GameHub${req.originalUrl}`, {
+                method: req.method,
+                headers: req.headers
+            });
 
-        if (file.headers.get('content-type').split(';')[0] == 'text/plain' && req.path.endsWith('.html') || req.path.endsWith('.htm')) {
-            res.writeHead(file.status, { 'Content-Type': 'text/html' })
+            const data = new Buffer.from(await file.arrayBuffer());
+
+            if (file.headers.get('content-type').split(';')[0] == 'text/plain' && req.path.endsWith('.html') || req.path.endsWith('.htm')) {
+                res.writeHead(file.status, { 'Content-Type': 'text/html' })
+            } else {
+                res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
+            }
+
+            res.end(data);
         } else {
-            res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
+            const file = await fetch(`http://10.82.7.62:3000/GameHub${req.originalUrl}`, {
+                method: req.method,
+                headers: req.headers,
+                body: JSON.stringify(req.body)
+            });
+
+            const data = new Buffer.from(await file.arrayBuffer());
+
+            if (file.headers.get('content-type').split(';')[0] == 'text/plain' && req.path.endsWith('.html') || req.path.endsWith('.htm')) {
+                res.writeHead(file.status, { 'Content-Type': 'text/html' })
+            } else {
+                res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
+            }
+
+            res.end(data);
         }
-        res.end(data);
     } catch (e) {
         res.sendStatus(404);
-        throw new Error(e);
+        console.log(e);
     }
 })
 
