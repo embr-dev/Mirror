@@ -62,12 +62,7 @@ app.all('*', async (req, res) => {
             });
 
             const data = new Buffer.from(await file.arrayBuffer());
-
-            if (file.headers.get('content-type').split(';')[0] == 'text/plain' && req.path.endsWith('.html') || req.path.endsWith('.htm')) {
-                res.writeHead(file.status, { 'Content-Type': 'text/html' })
-            } else {
-                res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
-            }
+            res.writeHead(file.status, { 'Content-Type': file.headers.get('content-type').split(';')[0] })
 
             res.end(data);
         }
