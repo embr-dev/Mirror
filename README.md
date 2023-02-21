@@ -25,18 +25,15 @@ npm install
 ```bash
 npm start
 ```
-
 then navigate on your web browser to [`localhost:2000`](http://localhost:2000) or [`127.0.0.1:2000`](http://127.0.0.1:2000) to test the server.
 
 ## API Docs
 
-| Path            | Data                                                                                                                                                                                                | Parameters         | Method |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------|
-| /               | ```{status: 'ready'/'inoperable',version: version,website: website,description: 'A simple proxy server for the GameHub API',repository: 'https://github.com/GameHub88/Mirror'}```
-
-| none               | GET    |
-| /games          | ```[{thumbnail: game-thumbnail, name: game-name, id: game-id}]```|                                                                                                                       | none               | GET    |
-| /games/:game-id | ```{name: game-name,url: game-url,thumbnail: game-thumbnail}```                                                                                                                           | ?hostname=hostname | GET    |
+| Path | Data | Parameters | Method |
+|------|------|------------|--------|
+| / |`{status: 'ready'/'inoperable', version: version, website: website, description: 'A simple proxy server for the GameHub API',repository: 'https://github.com/GameHub88/Mirror'}` | none | GET |
+| /games | `[{thumbnail: game-thumbnail, name: game-name, id: game-id}]`| none | GET |
+| /games/:game-id | `{name: game-name,url: game-url,thumbnail: game-thumbnail}` | hostname | GET |
 
 ## Contributors
 
