@@ -50,7 +50,7 @@ app.all('*', async (req, res) => {
         modifiedHeaders.instance = JSON.stringify({ domain: req.hostname, auth: res.locals.authKey });
 
         if (req.method == 'GET' || req.method == 'HEAD') {
-            const file = await fetch(`http://10.82.7.62:3000/GameHub${req.originalUrl}`, {
+            const file = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, {
                 method: req.method,
                 headers: modifiedHeaders
             });
@@ -65,7 +65,7 @@ app.all('*', async (req, res) => {
 
             res.end(data);
         } else {
-            const file = await fetch(`http://10.82.7.62:3000/GameHub${req.originalUrl}`, {
+            const file = await fetch(`https://retronetworkapi.onrender.com/GameHub${req.originalUrl}`, {
                 method: req.method,
                 headers: modifiedHeaders,
                 body: JSON.stringify(req.body)
