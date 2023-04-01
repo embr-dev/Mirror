@@ -28,15 +28,17 @@ app.all('/', (req, res) => {
 app.all('*', (req, res, next) => {
     if (config.auth != 'public') {
         if (req.query.hostname) {
-            fetch(`http://${req.query.hostname}/auth`)
-                .then(response => response.text())
+            fetch(`http://${req.query.hostname}/config.json`)
+                .then(response => response.json())
                 .then(data => {
-                    if (data == config.auth && req.hostname === req.query.hostname) {
-                        res.locals.authKey = data;
+
+                    const auth = data.auth;
+                    if (auth == config.auth && req.hostname === req.query.hostname) {
+                        res.locals.authKey = auth;
 
                         next();
                     } else {
-                        res.json({ error: true, errorMsg: `The domain ${req.hostname} does not contain the the auth token needed to access tauthKeys server.` });
+                        res.json({ error: true, errorMsg: `The domain ${req.hostname} does not contain the the auth token needed to access this server.` });
                     }
                 })
                 .catch(e => res.json({ error: true, errorMsg: `The domain ${req.query.hostname} is either not a GameHub instance or it is missing the verification token. If you are using an older fork of GameHub you may want to update.` }));
