@@ -106,7 +106,7 @@ app.all('*', async (req, res, next) => {
         }
 
         if (req.method == 'GET' || req.method == 'HEAD') {
-            const file = await fetch(`http://rklab:3000/GameHub${req.originalUrl}`, {
+            const file = await fetch(`http://api.gamehub.dev/GameHub${req.originalUrl}`, {
                 method: req.method,
                 headers: modifiedHeaders
             });
@@ -147,7 +147,7 @@ app.all('*', async (req, res, next) => {
                 next();
             }
         } else {
-            const file = await fetch(`http://rklab:3000/GameHub${req.originalUrl}`, {
+            const file = await fetch(`http://api.gamehub.dev/GameHub${req.originalUrl}`, {
                 method: req.method,
                 headers: modifiedHeaders,
                 body: JSON.stringify(req.body)
