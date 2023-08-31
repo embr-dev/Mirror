@@ -1,29 +1,29 @@
 {
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "node-fetch": "^3.3.0"
-  },
-  "name": "gamehub-api-mirror-server",
+  "name": "api-mirror",
   "description": "A simple proxy server for the GameHub API",
-  "version": "1.1.0",
-  "main": "index.js",
+  "version": "1.2.0",
+  "main": "server/index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server/index.js --prod",
+    "prod": "node server/index.js --prod",
+    "dev": "node server/index.js --test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GameHub88/Mirror.git"
+    "url": "git+https://github.com/EmberNetwork/Mirror.git"
   },
   "keywords": [
-    "proxy",
-    "gamehub"
+    "gamehub",
+    "embernetwork"
   ],
   "author": "Russell2259",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/GameHub88/Mirror/issues"
+    "url": "https://github.com/EmberNetwork/Mirror/issues"
   },
-  "homepage": "https://github.com/GameHub88/Mirror#readme"
+  "homepage": "https://github.com/EmberNetwork/Mirror#readme",
+  "dependencies": {
+    "mime": "^3.0.0"
+  }
 }
