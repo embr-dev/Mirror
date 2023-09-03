@@ -23,4 +23,4 @@ const Decompress = (res, data) => {
 
 export {
     Decompress
-}
+};

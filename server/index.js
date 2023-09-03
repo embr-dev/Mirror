@@ -1,4 +1,5 @@
 import { Decompress } from './decompress.js';
+import NetplayServer from './netplay/index.js';
 
 import mime from 'mime';
 
@@ -11,48 +12,56 @@ import fs from 'node:fs';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const mode = process.argv[2] === '--test' ? 'test' : (process.argv[2] === '--prod' ? 'prod' : 'test');
+const packageFile = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')));
+const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json')));
 const server = http.createServer();
+const serverPath = '/';
 
 server.on('connection', (socket) => {
     socket.on('data', (data) => {
-        const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
+        try {
+            const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
 
-        if (path !== '/' && !path.startsWith('/cdn/')) {
-            const remoteSocket = net.createConnection({
-                host: (mode === 'prod' ? 'api.embernet.work' : '127.0.0.1'),
-                port: (mode === 'prod' ? 433 : 3000)
-            });
+            if (path !== '/' && !path.startsWith('/cdn/')) {
+                const remoteSocket = net.createConnection({
+                    host: (mode === 'prod' ? 'api.embernet.work' : '127.0.0.1'),
+                    port: (mode === 'prod' ? 433 : 3000)
+                });
 
-            const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-            connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
-            connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
-            connectionData.push('\n\n');
+                const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
+                connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
+                connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
+                connectionData.push('\n\n');
 
-            remoteSocket.write(connectionData.join('\r'));
+                remoteSocket.write(connectionData.join('\r'));
 
-            socket.on('data', (data) => {
-                const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
+                socket.on('data', (data) => {
+                    const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
 
-                if (path !== '/' && !path.startsWith('/cdn/')) {
-                    const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-                    connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
-                    connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
-                    connectionData.push('\n\n');
+                    if (path !== '/' && !path.startsWith('/cdn/')) {
+                        const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
+                        connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
+                        connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
+                        connectionData.push('\n\n');
 
-                    remoteSocket.write(connectionData.join('\r'));
-                }
-            });
-            remoteSocket.pipe(socket);
+                        remoteSocket.write(connectionData.join('\r'));
+                    }
+                });
+                remoteSocket.pipe(socket);
 
-            remoteSocket.on('error', (e) => {
-                socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
-                socket.end('Unable to connect to API');
-            });
+                remoteSocket.on('error', (e) => {
+                    socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
+                    socket.end('Unable to connect to API');
+                });
 
-            socket.on('error', (e) => {
-                socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
-                socket.end('Internal server error');
-            });
+                socket.on('error', (e) => {
+                    socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
+                    socket.end('Internal server error');
+                });
+            }
+        } catch (e) {
+            socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
+            socket.end('Internal server error');
         }
     });
 });
@@ -111,8 +120,6 @@ server.on('request', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     if (req.path === '/') {
-        const packageFile = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')));
-
         res.setHeader('content-type', 'application/json');
 
         var apiStatus;
@@ -136,7 +143,11 @@ server.on('request', (req, res) => {
                     mode: mode,
                     version: packageFile.version,
                     description: packageFile.description,
-                    repository: packageFile.repository.url.replace('git+', '').replace('.git', '')
+                    repository: packageFile.repository.url.replace('git+', '').replace('.git', ''),
+                    netplay: {
+                        enabled: config.netplay.enabled,
+                        path: (config.netplay.enabled ? serverPath + 'netplay/' : undefined)
+                    }
                 }));
             }
         }, 1);
@@ -276,8 +287,6 @@ server.on('request', (req, res) => {
                         }))
                     }
                 } catch (e) {
-                    console.log(e);
-
                     res.end(JSON.stringify({
                         success: false,
                         status: 404,
@@ -289,12 +298,33 @@ server.on('request', (req, res) => {
                 status: 404,
                 message: 'Not found'
             }));
-        } else res.end(JSON.stringify({
-            success: false,
-            status: 404,
-            message: 'Not found'
-        }));
+        } else {
+            console.log(req.path);
+
+            res.end(JSON.stringify({
+                success: false,
+                status: 404,
+                message: 'Not found'
+            }));
+        }
     }
 });
 
 server.listen(process.env.PORT || (process.argv[2] === '--prod' ? 8080 : 5000), () => console.log(`GameHub Mirror server listening.\n\nPort: ${server.address().port}\nMode: ${mode}\nNode.js version: ${process.version}`));
+
+if (config.netplay.enabled) new NetplayServer(server, config.netplay);
+
+/*
+May add this as a feature later
+
+/**
+ * Start or attach a mirror server
+ * @param {string} path 
+ * @param {server} preexistingServer 
+ * @param {number} port The port for the server to start on (optional)
+ *//*
+export default (path, preexistingServer, port) => {
+  serverPath = path;
+
+  if (preexistingServer) server;
+};*/
