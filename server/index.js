@@ -33,6 +33,8 @@ server.on('connection', (socket) => {
                 connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
                 connectionData.push('\n\n');
 
+                console.log(data.toString().split('\r')[1].split(' ')[1]);
+
                 remoteSocket.write(connectionData.join('\r'));
 
                 socket.on('data', (data) => {
