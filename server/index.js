@@ -20,7 +20,19 @@ const serverPath = '/';
 server.on('connection', (socket) => {
     socket.on('data', (data) => {
         try {
-            const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
+            const url = data.toString().split('\r')[0].split(' ')[1];
+            const query = new URL('http://localhost' + url).searchParams;
+            const path = new URL('http://localhost' + url).pathname;
+            const headers = Object.fromEntries(data.toString()
+                .split('\r')
+                .slice(1)
+                .map(data => {
+                    const headers = data.slice(1).replace(':', '').split(' ', 2);
+                    headers[0] = headers[0].toLowerCase();
+
+                    return headers;
+                })
+                .filter(data => (data[0] !== '')));
 
             if (path !== '/' && !path.startsWith('/cdn/')) {
                 const remoteSocket = net.createConnection({
@@ -29,19 +41,19 @@ server.on('connection', (socket) => {
                 });
 
                 const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-                connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
-                connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
+                connectionData.unshift(`GET ${'/GameHub' + path} HTTP/1.1`);
+                connectionData.push(`\nMirror: ${'http://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
                 connectionData.push('\n\n');
 
                 remoteSocket.write(connectionData.join('\r'));
 
                 socket.on('data', (data) => {
-                    const path = new URL('http://localhost' + data.toString().split('\r')[0].split(' ')[1]).pathname;
+                    const path = new URL('http://localhost' + url).pathname;
 
                     if (path !== '/' && !path.startsWith('/cdn/')) {
                         const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-                        connectionData.unshift(`GET ${'/GameHub' + data.toString().split('\r')[0].split(' ')[1]} HTTP/1.1`);
-                        connectionData.push(`\nMirror: ${'http://' + data.toString().split('\r')[1].split(' ')[1]}`);
+                        connectionData.unshift(`GET ${'/GameHub' + path} HTTP/1.1`);
+                        connectionData.push(`\nMirror: ${'http://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
                         connectionData.push('\n\n');
 
                         remoteSocket.write(connectionData.join('\r'));
@@ -324,7 +336,7 @@ May add this as a feature later
  * @param {number} port The port for the server to start on (optional)
  *//*
 export default (path, preexistingServer, port) => {
-  serverPath = path;
+serverPath = path;
 
-  if (preexistingServer) server;
+if (preexistingServer) server;
 };*/
