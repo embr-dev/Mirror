@@ -42,7 +42,7 @@ server.on('connection', (socket) => {
 
                 const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
                 connectionData.unshift(`GET ${'/GameHub' + path} HTTP/1.1`);
-                connectionData.push(`\nMirror: ${'http://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
+                connectionData.push(`\nMirror: ${'https://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
                 connectionData.push('\n\n');
 
                 remoteSocket.write(connectionData.join('\r'));
@@ -53,7 +53,7 @@ server.on('connection', (socket) => {
                     if (path !== '/' && !path.startsWith('/cdn/')) {
                         const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
                         connectionData.unshift(`GET ${'/GameHub' + path} HTTP/1.1`);
-                        connectionData.push(`\nMirror: ${'http://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
+                        connectionData.push(`\nMirror: ${'https://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
                         connectionData.push('\n\n');
 
                         remoteSocket.write(connectionData.join('\r'));
