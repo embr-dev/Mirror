@@ -35,6 +35,8 @@ server.on('connection', (socket) => {
                 .filter(data => (data[0] !== '')));
 
             if (path !== '/' && !path.startsWith('/cdn/')) {
+                const protocol = (mode === 'test' ? 'http:' : (headers['upgrade-insecure-requests'] === '1' ? 'http:' : 'https:'));
+
                 const remoteSocket = net.createConnection({
                     host: (mode === 'prod' ? 'api.embernet.work' : '127.0.0.1'),
                     port: (mode === 'prod' ? 433 : 3000)
@@ -42,7 +44,7 @@ server.on('connection', (socket) => {
 
                 const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
                 connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
-                connectionData.push(`\nMirror: ${'https://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
+                connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
                 connectionData.push('\n\n');
 
                 remoteSocket.write(connectionData.join('\r'));
@@ -53,7 +55,7 @@ server.on('connection', (socket) => {
                     if (path !== '/' && !path.startsWith('/cdn/')) {
                         const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
                         connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
-                        connectionData.push(`\nMirror: ${'https://' + headers['host'] || query.get('server') || 'gamehub.dev'}`);
+                        connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
                         connectionData.push('\n\n');
 
                         remoteSocket.write(connectionData.join('\r'));
