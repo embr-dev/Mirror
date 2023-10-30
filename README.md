@@ -32,11 +32,7 @@ then navigate on your web browser to [`localhost:2000`](http://localhost:2000) o
 
 <h1 align="center">Docs</h1>
 
-| Path | Data | Parameters | Method |
-|------|------|------------|--------|
-| / |`{status: 'ready'/'inoperable', version: version, website: website, description: 'A simple proxy server for the GameHub API',repository: 'https://github.com/GameHub88/Mirror'}` | none | GET |
-| /games | `[{thumbnail: game-thumbnail, name: game-name, id: game-id}]`| none | GET |
-| /games/:game-id | `{name: game-name,url: game-url,thumbnail: game-thumbnail}` | hostname | GET |
+Coming Soon!
 
 <h1 align="center">Contributors</h1>
 <p align="center">
