@@ -1,0 +1,7 @@
+[
+  "decompress.js",
+  "index.js",
+  "request.js",
+  "netplay/index.js",
+  "netplay/room.js"
+]
