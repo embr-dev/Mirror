@@ -11,334 +11,388 @@ import url from 'node:url';
 import fs from 'node:fs';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
-const mode = process.argv[2] === '--test' ? 'test' : (process.argv[2] === '--prod' ? 'prod' : 'test');
-const packageFile = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')));
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json')));
-const server = http.createServer();
-const serverPath = '/';
+const mode = (fs.existsSync(path.join(__dirname, 'update.json')) && fs.existsSync(path.join(__dirname, '../../config.json')) ? 'attached' : (process.argv[2] === '--test' ? 'test' : (process.argv[2] === '--prod' ? 'prod' : 'test')));
+const packageFile = (mode === 'attached' ? JSON.parse(fs.readFileSync(path.join(__dirname, 'update.json'))).package : JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'))));
+const config = (mode === 'attached' ? JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'))).serverConfig.mirror.config : JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'))));
+var server = (mode === 'attached' ? null : http.createServer());
+var onServerReady;
+const serverPath = (mode === 'attached' ? JSON.parse(fs.readFileSync(path.join(__dirname, '../../config.json'))).serverConfig.mirror.config.path : '/');
 
-server.on('connection', (socket) => {
-    socket.on('data', (data) => {
-        try {
-            const url = data.toString().split('\r')[0].split(' ')[1];
-            const query = new URL('http://localhost' + url).searchParams;
-            const path = new URL('http://localhost' + url).pathname;
-            const headers = Object.fromEntries(data.toString()
-                .split('\r')
-                .slice(1)
-                .map(data => {
-                    const headers = data.slice(1).replace(':', '').split(' ', 2);
-                    headers[0] = headers[0].toLowerCase();
+if (mode !== 'attached') onServerReady();
 
-                    return headers;
-                })
-                .filter(data => (data[0] !== '')));
+onServerReady = () => {
+    server.on('connection', (socket) => {
+        socket.on('data', (data) => {
+            try {
+                const url = data.toString().split('\r')[0].split(' ')[1];
+                const query = new URL('http://localhost' + url).searchParams;
+                const path = new URL('http://localhost' + url).pathname;
+                const headers = Object.fromEntries(data.toString()
+                    .split('\r')
+                    .slice(1)
+                    .map(data => {
+                        const headers = data.slice(1).replace(':', '').split(' ', 2);
+                        headers[0] = headers[0].toLowerCase();
 
-            if (path !== '/' && !path.startsWith('/cdn/')) {
-                const protocol = (mode === 'test' ? 'http:' : (headers['upgrade-insecure-requests'] === '1' ? 'http:' : 'https:'));
+                        return headers;
+                    })
+                    .filter(data => (data[0] !== '')));
 
-                const remoteSocket = net.createConnection({
-                    host: (mode === 'prod' ? 'api.embernet.work' : '127.0.0.1'),
-                    port: (mode === 'prod' ? 433 : 3000)
-                });
+                if (path !== serverPath && !path.startsWith(serverPath + 'cdn/')) {
+                    const protocol = (mode === 'test' ? 'http:' : (headers['upgrade-insecure-requests'] === '1' ? 'http:' : 'https:'));
 
-                const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-                connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
-                connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
-                connectionData.push('\n\n');
+                    const remoteSocket = net.createConnection({
+                        host: (mode === 'prod' || mode === 'attached' ? 'api.embernet.work' : '127.0.0.1'),
+                        port: (mode === 'prod' || mode === 'attached' ? 433 : 3000)
+                    });
 
-                remoteSocket.write(connectionData.join('\r'));
+                    const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
+                    connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
+                    connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
+                    connectionData.push('\n\n');
 
-                socket.on('data', (data) => {
-                    const path = new URL('http://localhost' + url).pathname;
+                    remoteSocket.write(connectionData.join('\r'));
 
-                    if (path !== '/' && !path.startsWith('/cdn/')) {
-                        const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
-                        connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
-                        connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
-                        connectionData.push('\n\n');
+                    socket.on('data', (data) => {
+                        const path = new URL('http://localhost' + url).pathname;
 
-                        remoteSocket.write(connectionData.join('\r'));
-                    }
-                });
-                remoteSocket.pipe(socket);
+                        if (path !== '/' && !path.startsWith('/cdn/')) {
+                            const connectionData = data.toString().split('\r').slice(1).slice(0, -2);
+                            connectionData.unshift(`GET ${'/GameHub' + url} HTTP/1.1`);
+                            connectionData.push(`\nMirror: ${protocol}//${headers['host'] || query.get('server') || 'invalid'}`);
+                            connectionData.push('\n\n');
 
-                remoteSocket.on('error', (e) => {
-                    socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
-                    socket.end('Unable to connect to API');
-                });
+                            remoteSocket.write(connectionData.join('\r'));
+                        }
+                    });
+                    remoteSocket.pipe(socket);
 
-                socket.on('error', (e) => {
-                    socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
-                    socket.end('Internal server error');
-                });
+                    remoteSocket.on('error', (e) => {
+                        if (path.startsWith(serverPath)) {
+                            socket.write('HTTP/1.1 502 BAD GATEWAY\r');
+                            socket.write('\nContent-Type: application/json');
+                            socket.write('\n\n');
+                            socket.end(JSON.stringify({
+                                success: false,
+                                message: 'Unable to connect to API',
+                                status: 502
+                            }));
+                        }
+                    });
+
+                    socket.on('error', (e) => {
+                        if (path.startsWith(serverPath)) {
+                            socket.write('HTTP/1.1 502 BAD GATEWAY\r');
+                            socket.write('\nContent-Type: application/json');
+                            socket.write('\n\n');
+                            socket.end(JSON.stringify({
+                                success: false,
+                                message: 'Internal server error',
+                                status: 502
+                            }));
+                        }
+                    });
+                }
+            } catch (e) {
+                if (path.startsWith(serverPath)) {
+                    socket.write('HTTP/1.1 502 BAD GATEWAY\r');
+                    socket.write('\nContent-Type: application/json');
+                    socket.write('\n\n');
+                    socket.end(JSON.stringify({
+                        success: false,
+                        message: 'Internal server error',
+                        status: 502
+                    }));
+                }
             }
-        } catch (e) {
-            socket.write('HTTP/1.1 502 BAD GATEWAY\r\n\n');
-            socket.end('Internal server error');
-        }
+        });
     });
-});
 
-var thumbails = [];
+    var thumbails = [];
 
-(new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/thumbnails', res => {
-    const chunks = [];
-
-    res.on('data', chunk => chunks.push(chunk)).on('end', () => thumbails = JSON.parse(Decompress(res, chunks)));
-}).on('error', () => { });
-
-setInterval(() => {
-    (new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/thumbnails', res => {
+    (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/thumbnails', res => {
         const chunks = [];
 
-        res.on('data', chunk => chunks.push(chunk)).on('end', () => thumbails = JSON.parse(Decompress(res, chunks)));
+        res.on('data', chunk => chunks.push(chunk)).on('end', () => {
+            try {
+                thumbails = JSON.parse(Decompress(res, chunks));
+            } catch (e) { }
+        });
     }).on('error', () => { });
-}, 60000);
 
-var avatars = [];
-
-(new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/avatars', res => {
-    const chunks = [];
-
-    res.on('data', chunk => chunks.push(chunk)).on('end', () => avatars = JSON.parse(Decompress(res, chunks)));
-}).on('error', () => { });
-
-setInterval(() => {
-    (new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/avatars', res => {
-        const chunks = [];
-
-        res.on('data', chunk => chunks.push(chunk)).on('end', () => avatars = JSON.parse(Decompress(res, chunks)));
-    }).on('error', () => { });
-}, 60000);
-
-var games = [];
-
-(new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/games', res => {
-    const chunks = [];
-
-    res.on('data', chunk => chunks.push(chunk)).on('end', () => games = JSON.parse(Decompress(res, chunks)));
-}).on('error', () => { });
-
-setInterval(() => {
-    (new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/games', res => {
-        const chunks = [];
-
-        res.on('data', chunk => chunks.push(chunk)).on('end', () => games = JSON.parse(Decompress(res, chunks)));
-    }).on('error', () => { });
-}, 60000);
-
-server.on('request', (req, res) => {
-    req.path = new URL('http://localhost' + req.url).pathname;
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-
-    if (req.path === '/') {
-        res.setHeader('content-type', 'application/json');
-
-        var apiStatus;
-
-        (new URL(mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/status', res => {
+    setInterval(() => {
+        (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/thumbnails', res => {
             const chunks = [];
 
             res.on('data', chunk => chunks.push(chunk)).on('end', () => {
-                const status = JSON.parse(Decompress(res, chunks));
-
-                apiStatus = (status.success ? 'ready' : (status.message ? status.message : 'Unable to connect to API'))
+                try {
+                    thumbails = JSON.parse(Decompress(res, chunks));
+                } catch (e) { }
             });
-        }).on('error', () => apiStatus = 'Unable to connect to API');
+        }).on('error', () => { });
+    }, 60000);
 
-        const interval = setInterval(() => {
-            if (apiStatus) {
-                clearInterval(interval);
+    var avatars = [];
 
-                res.end(JSON.stringify({
-                    status: apiStatus,
-                    mode: mode,
-                    version: packageFile.version,
-                    description: packageFile.description,
-                    repository: packageFile.repository.url.replace('git+', '').replace('.git', ''),
-                    netplay: {
-                        enabled: config.netplay.enabled,
-                        path: (config.netplay.enabled ? serverPath + 'netplay/' : undefined)
-                    }
-                }));
-            }
-        }, 1);
-    } else if (req.path.startsWith('/cdn/')) {
-        if (req.path.replace('/cdn/', '').startsWith('thumbnails/')) {
-            if (Number(req.path.replace('/cdn/thumbnails/', '')) !== NaN ? (Number(req.path.replace('/cdn/thumbnails/', '')) < thumbails.length) && Math.sign(Number(req.path.replace('/cdn/thumbnails/', ''))) === 1 : false) {
-                (new URL(thumbails[Number(req.path.replace('/cdn/thumbnails/', '')) - 1]).protocol === 'https:' ? https : http).get(thumbails[Number(req.path.replace('/cdn/thumbnails/', '')) - 1], thumbResponse => {
-                    const chunks = [];
+    (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/avatars', res => {
+        const chunks = [];
 
-                    thumbResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
-                        try {
-                            res.setHeader('content-type', thumbResponse.headers['content-type']);
-                        } catch (e) { }
+        res.on('data', chunk => chunks.push(chunk)).on('end', () => {
+            try {
+                avatars = JSON.parse(Decompress(res, chunks));
+            } catch (e) { }
+        });
+    }).on('error', () => { });
 
-                        res.end(Decompress(thumbResponse, chunks));
-                    });
-                }).on('error', () => res.end(JSON.stringify({
-                    success: false,
-                    status: 404,
-                    message: 'Not found'
-                })));
-            } else res.end(JSON.stringify({
-                success: false,
-                status: 404,
-                message: 'Not found'
-            }))
-        } else if (req.path.replace('/cdn/', '').startsWith('avatars/')) {
-            if (Number(req.path.replace('/cdn/avatars/', '')) !== NaN ? (Number(req.path.replace('/cdn/avatars/', '')) < thumbails.length) && Math.sign(Number(req.path.replace('/cdn/avatars/', ''))) === 1 : false) {
+    setInterval(() => {
+        (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/avatars', res => {
+            const chunks = [];
+
+            res.on('data', chunk => chunks.push(chunk)).on('end', () => {
                 try {
-                    const avatar = avatars[Number(req.path.replace('/cdn/avatars/', '')) - 1];
+                    avatars = JSON.parse(Decompress(res, chunks));
+                } catch (e) { }
+            });
+        }).on('error', () => { });
+    }, 60000);
 
-                    res.setHeader('content-type', avatar.split(':')[1].split(';')[0]);
+    var games = [];
 
-                    res.end(Buffer.from(avatar.split(',')[1], 'base64'));
-                } catch (e) {
-                    res.end(JSON.stringify({
-                        success: false,
-                        status: 404,
-                        message: 'Not found'
-                    }));
-                }
-            } else res.end(JSON.stringify({
-                success: false,
-                status: 404,
-                message: 'Not found'
-            }));
-        } else if (req.path.replace('/cdn/', '').startsWith('assets/')) {
-            if (req.path.replace('/cdn/assets/', '') === 'inject.js') {
-                const injectURL = (mode === 'prod' ? 'https://raw.githubusercontent.com/EmberNetwork/GameHub/main/assets/js/inject.js' : 'http://localhost/assets/js/inject.js');
+    (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/games', res => {
+        const chunks = [];
 
-                (new URL(injectURL).protocol === 'https:' ? https : http).get(injectURL, assetResponse => {
-                    const chunks = [];
+        res.on('data', chunk => chunks.push(chunk)).on('end', () => {
+            try {
+                games = JSON.parse(Decompress(res, chunks));
+            } catch (e) { }
+        });
+    }).on('error', () => { });
 
-                    assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
-                        res.setHeader('content-type', 'application/javascript');
+    setInterval(() => {
+        (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/GameHub/cdn/games', res => {
+            const chunks = [];
 
-                        res.end(Decompress(assetResponse, chunks));
-                    });
-                }).on('error', () => res.end(JSON.stringify({
-                    success: false,
-                    status: 404,
-                    message: 'Not found'
-                })));
-            } else if (req.path.startsWith('/cdn/assets/emulator')) {
-                const path = req.path.replace('/cdn/assets/emulator', '');
-                const url = 'https://raw.githubusercontent.com/GameHub88/EmulatorJS/main/data' + path;
-
+            res.on('data', chunk => chunks.push(chunk)).on('end', () => {
                 try {
-                    (new URL(url).protocol === 'https:' ? https : http).get(url, assetResponse => {
+                    games = JSON.parse(Decompress(res, chunks));
+                } catch (e) { }
+            });
+        }).on('error', () => { });
+    }, 60000);
+
+    server.on('request', (req, res) => {
+        if (!res.headersSent) {
+            req.path = new URL('http://localhost' + req.url).pathname;
+
+            if (req.path.startsWith(serverPath)) {
+                req.path = '/' + req.path.replace(serverPath, '');
+                res.setHeader('Access-Control-Allow-Origin', '*');
+
+                if (req.path === '/') {
+                    res.setHeader('content-type', 'application/json');
+
+                    var apiStatus;
+
+                    (new URL(mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000').protocol === 'https:' ? https : http).get((mode === 'prod' || mode === 'attached' ? 'https://api.embernet.work' : 'http://localhost:3000') + '/status', res => {
                         const chunks = [];
 
-                        assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
-                            if ((!(assetResponse.statusCode >= 300)) && (!(assetResponse.statusCode < 200))) {
-                                res.body = Decompress(assetResponse, chunks);
+                        res.on('data', chunk => chunks.push(chunk)).on('end', () => {
+                            try {
+                                const status = JSON.parse(Decompress(res, chunks));
 
-                                res.setHeader('content-type', mime.getType(url));
+                                apiStatus = (status.success ? 'ready' : (status.message ? status.message : 'Unable to connect to API'))
+                            } catch (e) {
+                                apiStatus = 'Unable to connect to API';
+                            }
+                        });
+                    }).on('error', () => apiStatus = 'Unable to connect to API');
 
-                                res.end(res.body);
-                            } else res.end(JSON.stringify({
+                    const interval = setInterval(() => {
+                        if (apiStatus) {
+                            clearInterval(interval);
+
+                            res.end(JSON.stringify({
+                                status: apiStatus,
+                                mode: mode,
+                                version: packageFile.version,
+                                description: packageFile.description,
+                                repository: packageFile.repository.url.replace('git+', '').replace('.git', ''),
+                                netplay: {
+                                    enabled: config.netplay.enabled,
+                                    path: (config.netplay.enabled ? serverPath + 'netplay/' : undefined)
+                                }
+                            }));
+                        }
+                    }, 1);
+                } else if (req.path.startsWith('/cdn/')) {
+                    if (req.path.replace('/cdn/', '').startsWith('thumbnails/')) {
+                        if (Number(req.path.replace('/cdn/thumbnails/', '')) !== NaN ? (Number(req.path.replace('/cdn/thumbnails/', '')) < thumbails.length) && Math.sign(Number(req.path.replace('/cdn/thumbnails/', ''))) === 1 : false) {
+                            (new URL(thumbails[Number(req.path.replace('/cdn/thumbnails/', '')) - 1]).protocol === 'https:' ? https : http).get(thumbails[Number(req.path.replace('/cdn/thumbnails/', '')) - 1], thumbResponse => {
+                                const chunks = [];
+
+                                thumbResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
+                                    try {
+                                        res.setHeader('content-type', thumbResponse.headers['content-type']);
+                                    } catch (e) { }
+
+                                    res.end(Decompress(thumbResponse, chunks));
+                                });
+                            }).on('error', () => res.end(JSON.stringify({
                                 success: false,
                                 status: 404,
                                 message: 'Not found'
-                            }))
-                        });
-                    }).on('error', () => res.end(JSON.stringify({
-                        success: false,
-                        status: 404,
-                        message: 'Not found'
-                    })));
-                } catch (e) {
-                    res.statusCode = 404;
-
-                    res.end(JSON.stringify({
-                        success: false,
-                        status: 404,
-                        message: 'Not found'
-                    }));
-                }
-            } else if (Number(req.path.replace('/cdn/assets/', '').split('/')[0]) !== NaN ? (Number(req.path.replace('/cdn/assets/', '').split('/')[0]) < games.length) && Math.sign(Number(req.path.replace('/cdn/assets/', '').split('/')[0])) === 1 : false) {
-                try {
-                    const path = games[Number(req.path.replace('/cdn/assets/', '').split('/')[0]) - 1].split('/');
-                    path.pop();
-
-                    const url = path.join('/') + '/' + req.path.replace('/cdn/assets/', '').split('/').slice(1).join('/');
-
-                    try {
-                        (new URL(url).protocol === 'https:' ? https : http).get(url, assetResponse => {
-                            const chunks = [];
-
-                            assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
-                                if ((!(assetResponse.statusCode >= 300)) && (!(assetResponse.statusCode < 200))) {
-                                    res.body = Decompress(assetResponse, chunks);
-
-                                    res.setHeader('content-type', mime.getType(url));
-
-                                    if (mime.getType(url) === 'text/html') res.body = `<script src="/cdn/assets/inject.js" async></script>` + res.body;
-
-                                    res.end(res.body);
-                                } else res.end(JSON.stringify({
-                                    success: false,
-                                    status: 404,
-                                    message: 'Not found'
-                                }))
-                            });
-                        }).on('error', () => res.end(JSON.stringify({
-                            success: false,
-                            status: 404,
-                            message: 'Not found'
-                        })));
-                    } catch (e) {
-                        res.statusCode = 404;
-
-                        res.end(JSON.stringify({
+                            })));
+                        } else res.end(JSON.stringify({
                             success: false,
                             status: 404,
                             message: 'Not found'
                         }))
-                    }
-                } catch (e) {
-                    res.end(JSON.stringify({
-                        success: false,
-                        status: 404,
-                        message: 'Not found'
-                    }));
-                }
-            } else res.end(JSON.stringify({
-                success: false,
-                status: 404,
-                message: 'Not found'
-            }));
-        } else {
-            console.log(req.path);
+                    } else if (req.path.replace('/cdn/', '').startsWith('avatars/')) {
+                        if (Number(req.path.replace('/cdn/avatars/', '')) !== NaN ? (Number(req.path.replace('/cdn/avatars/', '')) < thumbails.length) && Math.sign(Number(req.path.replace('/cdn/avatars/', ''))) === 1 : false) {
+                            try {
+                                const avatar = avatars[Number(req.path.replace('/cdn/avatars/', '')) - 1];
 
-            res.end(JSON.stringify({
-                success: false,
-                status: 404,
-                message: 'Not found'
-            }));
+                                res.setHeader('content-type', avatar.split(':')[1].split(';')[0]);
+
+                                res.end(Buffer.from(avatar.split(',')[1], 'base64'));
+                            } catch (e) {
+                                res.end(JSON.stringify({
+                                    success: false,
+                                    status: 404,
+                                    message: 'Not found'
+                                }));
+                            }
+                        } else res.end(JSON.stringify({
+                            success: false,
+                            status: 404,
+                            message: 'Not found'
+                        }));
+                    } else if (req.path.replace('/cdn/', '').startsWith('assets/')) {
+                        if (req.path.replace('/cdn/assets/', '') === 'inject.js') {
+                            const injectURL = (mode === 'prod' || mode === 'attached' ? 'https://raw.githubusercontent.com/EmberNetwork/GameHub/main/assets/js/inject.js' : 'http://localhost/assets/js/inject.js');
+
+                            (new URL(injectURL).protocol === 'https:' ? https : http).get(injectURL, assetResponse => {
+                                const chunks = [];
+
+                                assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
+                                    res.setHeader('content-type', 'application/javascript');
+
+                                    res.end(Decompress(assetResponse, chunks));
+                                });
+                            }).on('error', () => res.end(JSON.stringify({
+                                success: false,
+                                status: 404,
+                                message: 'Not found'
+                            })));
+                        } else if (req.path.startsWith('/cdn/assets/emulator')) {
+                            const path = req.path.replace('/cdn/assets/emulator', '');
+                            const url = 'https://raw.githubusercontent.com/GameHub88/EmulatorJS/main/data' + path;
+
+                            try {
+                                (new URL(url).protocol === 'https:' ? https : http).get(url, assetResponse => {
+                                    const chunks = [];
+
+                                    assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
+                                        if ((!(assetResponse.statusCode >= 300)) && (!(assetResponse.statusCode < 200))) {
+                                            res.body = Decompress(assetResponse, chunks);
+
+                                            res.setHeader('content-type', mime.getType(url));
+
+                                            res.end(res.body);
+                                        } else res.end(JSON.stringify({
+                                            success: false,
+                                            status: 404,
+                                            message: 'Not found'
+                                        }))
+                                    });
+                                }).on('error', () => res.end(JSON.stringify({
+                                    success: false,
+                                    status: 404,
+                                    message: 'Not found'
+                                })));
+                            } catch (e) {
+                                res.statusCode = 404;
+
+                                res.end(JSON.stringify({
+                                    success: false,
+                                    status: 404,
+                                    message: 'Not found'
+                                }));
+                            }
+                        } else if (Number(req.path.replace('/cdn/assets/', '').split('/')[0]) !== NaN ? (Number(req.path.replace('/cdn/assets/', '').split('/')[0]) < games.length) && Math.sign(Number(req.path.replace('/cdn/assets/', '').split('/')[0])) === 1 : false) {
+                            try {
+                                const path = games[Number(req.path.replace('/cdn/assets/', '').split('/')[0]) - 1].split('/');
+                                path.pop();
+
+                                const url = path.join('/') + '/' + req.path.replace('/cdn/assets/', '').split('/').slice(1).join('/');
+
+                                try {
+                                    (new URL(url).protocol === 'https:' ? https : http).get(url, assetResponse => {
+                                        const chunks = [];
+
+                                        assetResponse.on('data', chunk => chunks.push(chunk)).on('end', () => {
+                                            if ((!(assetResponse.statusCode >= 300)) && (!(assetResponse.statusCode < 200))) {
+                                                res.body = Decompress(assetResponse, chunks);
+
+                                                res.setHeader('content-type', mime.getType(url));
+
+                                                if (mime.getType(url) === 'text/html') res.body = `<script src="/cdn/assets/inject.js" async></script>` + res.body;
+
+                                                res.end(res.body);
+                                            } else res.end(JSON.stringify({
+                                                success: false,
+                                                status: 404,
+                                                message: 'Not found'
+                                            }))
+                                        });
+                                    }).on('error', () => res.end(JSON.stringify({
+                                        success: false,
+                                        status: 404,
+                                        message: 'Not found'
+                                    })));
+                                } catch (e) {
+                                    res.statusCode = 404;
+
+                                    res.end(JSON.stringify({
+                                        success: false,
+                                        status: 404,
+                                        message: 'Not found'
+                                    }))
+                                }
+                            } catch (e) {
+                                res.end(JSON.stringify({
+                                    success: false,
+                                    status: 404,
+                                    message: 'Not found'
+                                }));
+                            }
+                        } else res.end(JSON.stringify({
+                            success: false,
+                            status: 404,
+                            message: 'Not found'
+                        }));
+                    } else {
+                        res.end(JSON.stringify({
+                            success: false,
+                            status: 404,
+                            message: 'Not found'
+                        }));
+                    }
+                }
+            }
+        }
+    });
+
+    if (mode !== 'attached') server.listen(process.env.PORT || (mode === 'prod' ? 8080 : 5000), () => console.log(`GameHub Mirror server listening.\n\nPort: ${server.address().port}\nMode: ${mode}\nNode.js version: ${process.version}`));
+
+    if (config.netplay.enabled) new NetplayServer(server, config.netplay);
+}
+
+export default {
+    attachToServer: (mainServer) => {
+        if (mode === 'attached') {
+            server = mainServer;
+            onServerReady();
         }
     }
-});
-
-server.listen(process.env.PORT || (process.argv[2] === '--prod' ? 8080 : 5000), () => console.log(`GameHub Mirror server listening.\n\nPort: ${server.address().port}\nMode: ${mode}\nNode.js version: ${process.version}`));
-
-if (config.netplay.enabled) new NetplayServer(server, config.netplay);
-
-/*
-May add this as a feature later
-
-/**
- * Start or attach a mirror server
- * @param {string} path 
- * @param {server} preexistingServer 
- * @param {number} port The port for the server to start on (optional)
- *//*
-export default (path, preexistingServer, port) => {
-serverPath = path;
-
-if (preexistingServer) server;
-};*/
+};
